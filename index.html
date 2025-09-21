@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #2c3e50, #4a5568);
+            padding: 20px;
+        }
+
+        .calculator {
+            width: 100%;
+            max-width: 320px;
+            background-color: #1a202c;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .display {
+            background-color: #2d3748;
+            color: white;
+            text-align: right;
+            padding: 25px 20px;
+            position: relative;
+        }
+
+        .previous-display {
+            min-height: 24px;
+            font-size: 16px;
+            color: #a0aec0;
+            margin-bottom: 5px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .current-display {
+            min-height: 40px;
+            font-size: 32px;
+            font-weight: bold;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background-color: #2d3748;
+            padding: 1px;
+        }
+
+        button {
+            border: none;
+            outline: none;
+            cursor: pointer;
+            font-size: 20px;
+            font-weight: 500;
+            height: 70px;
+            background-color: #2d3748;
+            color: white;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #4a5568;
+        }
+
+        button:active {
+            background-color: #667eea;
+            transform: scale(0.95);
+        }
+
+        .number {
+            background-color: #2d3748;
+        }
+
+        .operator {
+            background-color: #3182ce;
+            font-weight: bold;
+        }
+
+        .equals {
+            background-color: #38a169;
+            font-weight: bold;
+        }
+
+        .clear, .delete {
+            background-color: #e53e3e;
+        }
+
+        /* Efek ripple saat tombol ditekan */
+        .ripple {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ripple::after {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+            opacity: 0;
+            transform: scale(0);
+            transition: transform 0.3s, opacity 0.3s;
+        }
+
+        .ripple:active::after {
+            transform: scale(2);
+            opacity: 1;
+            transition: 0s;
+        }
+
+        @media (max-width: 340px) {
+            .calculator {
+                max-width: 280px;
+            }
+            
+            button {
+                height: 60px;
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <div class="display">
+            <div class="previous-display" id="previous-display"></div>
+            <div class="current-display" id="current-display">0</div>
+        </div>
+        <div class="buttons">
+            <button class="clear ripple" data-action="clear">C</button>
+            <button class="delete ripple" data-action="delete">⌫</button>
+            <button class="operator ripple" data-operator="%">%</button>
+            <button class="operator ripple" data-operator="/">÷</button>
+            
+            <button class="number ripple" data-number="7">7</button>
+            <button class="number ripple" data-number="8">8</button>
+            <button class="number ripple" data-number="9">9</button>
+            <button class="operator ripple" data-operator="*">×</button>
+            
+            <button class="number ripple" data-number="4">4</button>
+            <button class="number ripple" data-number="5">5</button>
+            <button class="number ripple" data-number="6">6</button>
+            <button class="operator ripple" data-operator="-">−</button>
+            
+            <button class="number ripple" data-number="1">1</button>
+            <button class="number ripple" data-number="2">2</button>
+            <button class="number ripple" data-number="3">3</button>
+            <button class="operator ripple" data-operator="+">+</button>
+            
+            <button class="number ripple" data-number="0">0</button>
+            <button class="number ripple" data-number=".">.</button>
+            <button class="equals ripple" data-action="calculate">=</button>
+        </div>
+    </div>
+
+    <script>
+        const currentDisplay = document.getElementById('current-display');
+        const previousDisplay = document.getElementById('previous-display');
+        let currentInput = '0';
+        let previousInput = '';
+        let operation = null;
+        let shouldResetScreen = false;
+
+        // Fungsi untuk mengupdate tampilan
+        function updateDisplay() {
+            currentDisplay.textContent = currentInput;
+            if (operation != null) {
+                previousDisplay.textContent = `${previousInput} ${operation}`;
+            } else {
+                previousDisplay.textContent = previousInput;
+            }
+        }
+
+        // Fungsi untuk menambahkan angka
+        function appendNumber(number) {
+            if (currentInput === '0' || shouldResetScreen) {
+                currentInput = number;
+                shouldResetScreen = false;
+            } else {
+                currentInput += number;
+            }
+        }
+
+        // Fungsi untuk menambahkan titik desimal
+        function appendDecimal() {
+            if (shouldResetScreen) {
+                currentInput = '0.';
+                shouldResetScreen = false;
+                return;
+            }
+            
+            if (!currentInput.includes('.')) {
+                currentInput += '.';
+            }
+        }
+
+        // Fungsi untuk memilih operasi
+        function chooseOperation(op) {
+            if (currentInput === '') return;
+            
+            if (previousInput !== '') {
+                calculate();
+            }
+            
+            operation = op;
+            previousInput = currentInput;
+            shouldResetScreen = true;
+        }
+
+        // Fungsi untuk melakukan kalkulasi
+        function calculate() {
+            let computation;
+            const prev = parseFloat(previousInput);
+            const current = parseFloat(currentInput);
+            
+            if (isNaN(prev) || isNaN(current)) return;
+            
+            switch (operation) {
+                case '+':
+                    computation = prev + current;
+                    break;
+                case '−':
+                    computation = prev - current;
+                    break;
+                case '×':
+                    computation = prev * current;
+                    break;
+                case '÷':
+                    if (current === 0) {
+                        computation = 'Error';
+                    } else {
+                        computation = prev / current;
+                    }
+                    break;
+                case '%':
+                    computation = prev % current;
+                    break;
+                default:
+                    return;
+            }
+            
+            currentInput = computation.toString();
+            operation = null;
+            previousInput = '';
+            shouldResetScreen = true;
+        }
+
+        // Fungsi untuk menghapus semua
+        function clear() {
+            currentInput = '0';
+            previousInput = '';
+            operation = null;
+        }
+
+        // Fungsi untuk menghapus karakter terakhir
+        function deleteNumber() {
+            if (currentInput.length === 1) {
+                currentInput = '0';
+            } else {
+                currentInput = currentInput.slice(0, -1);
+            }
+        }
+
+        // Event listeners untuk tombol
+        document.querySelectorAll('.number').forEach(button => {
+            button.addEventListener('click', () => {
+                appendNumber(button.getAttribute('data-number'));
+                updateDisplay();
+            });
+        });
+
+        document.querySelector('.ripple[data-number="."]').addEventListener('click', () => {
+            appendDecimal();
+            updateDisplay();
+        });
+
+        document.querySelectorAll('.operator').forEach(button => {
+            button.addEventListener('click', () => {
+                chooseOperation(button.getAttribute('data-operator'));
+                updateDisplay();
+            });
+        });
+
+        document.querySelector('.equals').addEventListener('click', () => {
+            calculate();
+            updateDisplay();
+        });
+
+        document.querySelector('.clear').addEventListener('click', () => {
+            clear();
+            updateDisplay();
+        });
+
+        document.querySelector('.delete').addEventListener('click', () => {
+            deleteNumber();
+            updateDisplay();
+        });
+
+        // Event listener untuk keyboard
+        document.addEventListener('keydown', (event) => {
+            if (/[0-9]/.test(event.key)) {
+                appendNumber(event.key);
+            } else if (event.key === '.') {
+                appendDecimal();
+            } else if (event.key === '+' || event.key === '-') {
+                chooseOperation(event.key === '+' ? '+' : '−');
+            } else if (event.key === '*') {
+                chooseOperation('×');
+            } else if (event.key === '/') {
+                chooseOperation('÷');
+            } else if (event.key === 'Enter' || event.key === '=') {
+                event.preventDefault();
+                calculate();
+            } else if (event.key === 'Backspace') {
+                deleteNumber();
+            } else if (event.key === 'Escape') {
+                clear();
+            } else if (event.key === '%') {
+                chooseOperation('%');
+            }
+            updateDisplay();
+        });
+
+        // Inisialisasi tampilan
+        updateDisplay();
+    </script>
+</body>
+</html>
